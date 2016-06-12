@@ -2,7 +2,7 @@ name: cr7aa 的博客
 description: Blog for cr7aa
 meta_description: "haha"
 
-markdown: redcarpet
+markdown: kramdown
 highlighter: pygments
 logo: false
 paginate: 15
