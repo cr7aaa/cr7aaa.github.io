@@ -1,6 +1,6 @@
-name: SindriLin's 小巢
-description: Blog for SindriLin
-meta_description: "Hi, I'm Lin Sindri, an iOS coder, now work in shenzhen"
+name: cr7aa 的博客
+description: Blog for cr7aa
+meta_description: "haha"
 
 markdown: redcarpet
 highlighter: pygments
@@ -12,4 +12,4 @@ google_analytics: 'UA-XXXXXXXX-X'
 
 # Details for the RSS feed generator
 url:            'liyangwei.com'
-author:         'Sindri Lin'
+author:         'cr7aa'
