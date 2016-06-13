@@ -1,10 +1,9 @@
 ---
 layout: post
-title:  "sdwebimage"
-date:   2016-06-11 18:54:00
+title:  "SDWebImage学习笔记"
+date:   2016-06-07 14:55:37
 categories: animate
 ---
-
 ##SDWebImage源码
 
 ### 1. 下载
