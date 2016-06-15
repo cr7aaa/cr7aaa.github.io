@@ -197,4 +197,119 @@ NSMutableDictionary *URLCallbacks = @{@"URL":@[@"kProgressCallbackKey":progressB
 
 ```
 
+ － (id <SDWebImageOperation>)downloadImageWithURL: options: progress: completed: 是下载图片的方法,将下载回调和完成回调加入到Callback中,创建了request对象和一个自定义的继承自NSOPeration的对象SDWebImageDownloaderOperation,将operation加入到downloadQueue队列中 开始图片的下载。
 
+```
+- (id <SDWebImageOperation>)downloadImageWithURL:(NSURL *)url options:(SDWebImageDownloaderOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageDownloaderCompletedBlock)completedBlock {
+    
+    __block SDWebImageDownloaderOperation *operation;
+    __weak __typeof(self)wself = self;
+
+    //将下载的请求回调加入到callbacks中
+    [self addProgressCallback:progressBlock completedBlock:completedBlock forURL:url createCallback:^{
+        
+        //请求超时时间，默认15秒
+        NSTimeInterval timeoutInterval = wself.downloadTimeout;
+        if (timeoutInterval == 0.0) {
+            timeoutInterval = 15.0;
+        }
+
+        //创建request请求
+        NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:(options & SDWebImageDownloaderUseNSURLCache ? NSURLRequestUseProtocolCachePolicy : NSURLRequestReloadIgnoringLocalCacheData) timeoutInterval:timeoutInterval];
+       ...
+       
+        //初始化SDWebImageDownloaderOperation对象
+        operation = [[wself.operationClass alloc] initWithRequest:request
+                                                          options:options
+                                                         ...
+        //将operation加入到下载队列中,开始图片下载
+        [wself.downloadQueue addOperation:operation];
+        
+        //判断图片的下载顺序
+        if (wself.executionOrder == SDWebImageDownloaderLIFOExecutionOrder) {
+            // Emulate LIFO execution order by systematically adding new operations as last operation's dependency
+            [wself.lastAddedOperation addDependency:operation];
+            wself.lastAddedOperation = operation;
+        }
+    }];
+
+    return operation;
+}
+
+
+```
+
+### 2 SDWebImageDownloaderOperation
+
+SDWebImageDownloaderOperation是继承自NSOperation对象,它遵守了一个叫SDWebImageOperation的协议 这个协议只声明了一个方法
+
+```
+//取消下载操作
+- (void)cancel;
+
+```
+
+SDWebImageDownloaderOperation这个类只暴露了一个初始化的方法
+
+```
+- (id)initWithRequest:(NSURLRequest *)request
+              options:(SDWebImageDownloaderOptions)options
+             progress:(SDWebImageDownloaderProgressBlock)progressBlock
+            completed:(SDWebImageDownloaderCompletedBlock)completedBlock
+            cancelled:(SDWebImageNoParamsBlock)cancelBlock;
+```
+
+在SDWebImageDownloaderOperation的内部,它重写了start方法
+
+```
+
+- (void)start {
+//为了防止资源抢夺加上互斥锁
+    @synchronized (self) {
+     ...
+     
+     //开始下载
+             self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
+            self.thread = [NSThread currentThread];
+    }
+
+    [self.connection start];
+
+  
+    if (self.connection) {
+
+        if (self.progressBlock) {
+            self.progressBlock(0, NSURLResponseUnknownLength);
+        }
+        //发送下载开始的通知,为了在主线程接受通知所以在主线程发送
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStartNotification object:self];
+        });
+
+        //在默认的mode下运行(为了在滑动的时候不进行下载操作)
+        if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_5_1) {
+            // Make sure to run the runloop in our background thread so it can process downloaded data
+            // Note: we use a timeout to work around an issue with NSURLConnection cancel under iOS 5
+            //       not waking up the runloop, leading to dead threads (see https://github.com/rs/SDWebImage/issues/466)
+            CFRunLoopRunInMode(kCFRunLoopDefaultMode, 10, false);
+        }
+        else {
+            CFRunLoopRun();
+        }
+
+    ...
+}
+
+```
+
+同时它还实现了NSURLConnectionDataDelegate的一些协议监听下载过程
+
+```
+//接受到响应
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+
+//接收到数据
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+
+
+```
