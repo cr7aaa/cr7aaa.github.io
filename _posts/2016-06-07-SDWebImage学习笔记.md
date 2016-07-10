@@ -2,7 +2,7 @@
 layout: post
 title:  "SDWebImage学习笔记"
 date:   2016-06-07 14:55:37
-categories: animate
+categories: code
 ---
 
 SDWebImage是iOS开发中最常用的第三方图片下载库,本文是对SDWebImage源码的学习笔记.
