@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "self和super"
+title:  "runtime试题(1)self和super"
 date:   2016-07-27 23:41:37
 categories: runtime
 ---
