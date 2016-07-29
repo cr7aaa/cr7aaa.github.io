@@ -27,7 +27,7 @@ BOOL res4 = [(id)[Sark class] isMemberOfClass:[Sark class]];
 
 ```
 
-### id和Class
+### 一, id和Class
 
 再解决此问题前,首先要明白id和Class这2个概念
 
@@ -92,3 +92,60 @@ struct objc_object {
 关于类的isa指针,superclass等关系如下图:
 
 <span><img src="\images\id和class\class.png"></span>
+
+
+### 二, isKindOfClass:和isMemberOfClass:
+
+要解答这个问题,还需要了解的是isKindOfClass:和isMemberOfClass:这2个方法的实现
+
+#### 1 isKindOfClass:
+
+在Object.mm中,能找到这两个方法的实现
+
+```
+- (BOOL)isKindOf:aClass
+{
+	Class cls;
+	for (cls = isa; cls; cls = cls->superclass) 
+		if (cls == (Class)aClass)
+			return YES;
+	return NO;
+}
+
+```
+
+通过这个实现，我们发现这里是有一个遍历,首先初始赋值为isa指针所指的对象,然后一层一层的父类,直到为nil。如果发现与aClass相等,则返回YES。若整个for循环之后都找不到相等,则返回NO.
+
+懂了这个之后,然后参照上图再来看这个题目:
+
+```
+BOOL res1 = [(id)[NSObject class] isKindOfClass:[NSObject class]];
+BOOL res3 = [(id)[Sark class] isKindOfClass:[Sark class]];
+
+```
+
+第一个 [NSObject class]的isa指针指向NSObject的meta Class,与[NSObject class]不相等,继续遍历到NSObject的meta Class的super class为[NSObject class].与[NSObject class]相等,所以返回1.
+
+第二个 [Sark class]的isa指针指向Sark的meta Class,与[Sark class]不相等,一层层像上遍历superclass为NSObject的meta Class,[NSObject class].都与[Sark class]不相等,所以最后返回0.
+
+#### 2 isMemberOfClass:
+
+```
+- (BOOL)isMemberOf:aClass
+{
+	return isa == (Class)aClass;
+}
+```
+
+isMemberOfClass这个方法就是直接比较isa指针所指的类与aClass是否相等.
+
+在来看题目:
+
+```
+BOOL res2 = [(id)[NSObject class] isMemberOfClass:[NSObject class]];
+BOOL res4 = [(id)[Sark class] isMemberOfClass:[Sark class]];
+
+```
+第一个 [NSObject class]的isa指针指向NSObject的meta Class,与[NSObject class]不相等,所以返回0.
+
+第二个 [Sark class]的isa指针指向Sark的meta Class,与[Sark class]不相等,所以也返回0.
